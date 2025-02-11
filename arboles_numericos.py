@@ -12,13 +12,14 @@ __date__ = "enero 2025"
 
 
 import math
+import random
 from collections import Counter
 
 def entrena_arbol(datos, target, clase_default, 
                   max_profundidad=None, acc_nodo=1.0, min_ejemplos=0,
                   variables_seleccionadas=None):
     """
-    Entrena un árbol de desición utilizando el criterio de entropía
+    Entrena un árbol de  desición utilizando el criterio de entropía
     
     Parámetros: 
     -----------
@@ -45,26 +46,30 @@ def entrena_arbol(datos, target, clase_default,
         El nodo raíz del árbol de desición
     
     """
-    atributos = list(datos[0].keys())
-    atributos.remove(target)
-        
+    if not datos:
+        return NodoN(terminal=True, clase_default=clase_default) #parche bosque_aleatorio.py
+    atributos = list(datos[0].keys()) # Extrae las llaves (nombres de atributos) del primer diccionario
+    atributos.remove(target)  # Se elimina la variable objetivo, ya que no se usa como atributo de división
+    
+    if isinstance(variables_seleccionadas, int):
+        atributos = random.sample(atributos, min(variables_seleccionadas, len(atributos)))
     # Criterios para deterinar si es un nodo hoja
     if  len(datos) == 0 or len(atributos) == 0:
-        return NodoN(terminal=True, clase_default=clase_default)
+        return NodoN(terminal=True, clase_default=clase_default) # Si no hay datos o no quedan atributos para dividir, se retorna un nodo hoja
     
-    clases = Counter(d[target] for d in datos)
-    clase_default = clases.most_common(1)[0][0]
+    clases = Counter(d[target] for d in datos)# Contamos la frecuencia de cada clase en la variable objetivo
+    clase_default = clases.most_common(1)[0][0] # Se define la clase más común como la clase por defecto para este nodo, most_common(1) deviuelve el mas comun no el segundo mas comun
     
     if (max_profundidad == 0 or 
         len(datos) <= min_ejemplos or 
-        clases.most_common(1)[0][1] / len(datos) >= acc_nodo):
+        clases.most_common(1)[0][1] / len(datos) >= acc_nodo): 
         
-        return NodoN(terminal=True, clase_default=clase_default)
+        return NodoN(terminal=True, clase_default=clase_default) #nodo hoja
     
-    variable, valor = selecciona_variable_valor(
+    variable, valor = selecciona_variable_valor( # Selecciona el mejor atributo para dividir el conjunto de datos
         datos, target, atributos
     )
-    nodo = NodoN(
+    nodo = NodoN( # Se crea un nodo interno con el atributo seleccionado
         terminal=False, 
         clase_default=clase_default,
         atributo=variable, 
@@ -84,7 +89,7 @@ def entrena_arbol(datos, target, clase_default,
         max_profundidad - 1 if max_profundidad is not None else None,
         acc_nodo, min_ejemplos, variables_seleccionadas
     )   
-    return nodo
+    return nodo  # Retorna el nodo raíz del árbol
 
 def selecciona_variable_valor(datos, target, atributos):
     """
@@ -108,7 +113,7 @@ def selecciona_variable_valor(datos, target, atributos):
         El valor del atributo que mejor separa las clases
     """
     
-    entropia = entropia_clase(datos, target)
+    entropia = entropia_clase(datos, target) # Calcula la entropía total de la variable objetivo (target)
     mejor = max(
         ((a, maxima_ganancia_informacion(datos, target, a, entropia))
             for a in atributos),
